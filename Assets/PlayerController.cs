@@ -1,5 +1,4 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
@@ -81,7 +80,7 @@ public class PlayerController : MonoBehaviour
                 if (driveRight)
                 {
                     // D => detach at α = 0°
-                    if (CrossedAngle(prevAlphaDeg, currAlphaDeg, -40f))
+                    if (CrossedAngle(prevAlphaDeg, currAlphaDeg, -35f))
                     {
                         ForceDetach(addUpBoost: false);
                         return;
@@ -90,7 +89,7 @@ public class PlayerController : MonoBehaviour
                 else if (driveLeft)
                 {
                     // A => detach at α = 180°
-                    if (CrossedAngle(prevAlphaDeg, currAlphaDeg, 220f))
+                    if (CrossedAngle(prevAlphaDeg, currAlphaDeg, 210f))
                     {
                         ForceDetach(addUpBoost: false);
                         return;
@@ -110,7 +109,7 @@ public class PlayerController : MonoBehaviour
                 // place player on rope circle (same formula you already use on attach)
                 Vector3 offset = new Vector3(Mathf.Sin(swingAngle), -Mathf.Cos(swingAngle), 0f) * ropeLength;
                 Vector3 newPos = pivotPosition + offset;
-                newPos.z = 0f;
+                newPos.z = this.transform.position.z;
                 transform.position = newPos;
             }
             else
@@ -191,7 +190,7 @@ public class PlayerController : MonoBehaviour
         {
             // Always lock Z = 0 so player stays on 2.5D plane
             Vector3 newPos = transform.position + velocity * Time.deltaTime;
-            newPos.z = 0f;
+            newPos.z = this.transform.position.z;
             transform.position = newPos;
         }
 
