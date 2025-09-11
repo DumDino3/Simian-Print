@@ -97,3 +97,7 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+DEVHUB/pallete.psd
+DEVHUB/Drawing/Skybox.psd
+DEVHUB/Drawing/Skybox2.psd
+DEVHUB/Drawing/Skybox3.psd

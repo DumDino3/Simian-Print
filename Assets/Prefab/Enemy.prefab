@@ -188,8 +188,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1751de06ebdfab44e9d47fadeb42c738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  wideCone: {fileID: 0}
-  narrowCone: {fileID: 0}
+  wideCone: {fileID: 5907268557442518610}
+  longCone: {fileID: 5481938495979252918}
   aimAxis: 1
   upHint: {x: 0, y: 1, z: 0}
   closeRange: 3
