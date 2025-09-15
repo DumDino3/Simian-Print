@@ -79,7 +79,7 @@ public class PlayerController : MonoBehaviour
             ApplyVelocity();
         }
 
-        UpdateAnimator();
+        UpdateAnimatorAndSound();
 
 
     }
