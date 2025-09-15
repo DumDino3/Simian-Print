@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UIElements.Experimental;
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,11 +11,17 @@ public class PlayerController : MonoBehaviour
 
     [Header("MOVEMENT SETTINGS")]
     public float moveSpeed;
+    public float crouchSpeed;
     public float gravityStrength;
     public float airMoveValue;
     public float jumpStrength;
+    public bool canSecondJump = false;
+    //private bool usedSecondJump = false;
 
     [Header("RUNTIME STATE")]
+    public bool isRunning;
+    public bool isCrouching;
+    public bool isNoisy;
     public float moveDir;
     public Vector3 velocity;
     public GameObject Body;
@@ -43,6 +50,7 @@ public class PlayerController : MonoBehaviour
     static readonly int JumpHash = Animator.StringToHash("Jump");
     static readonly int FallHash = Animator.StringToHash("Fall");
     static readonly int SwingHash = Animator.StringToHash("Swing");
+    static readonly int CrouchHash = Animator.StringToHash("Crouch");
 
 
     //------------------------------------------------------------------------------------------------- ON UPDATE -------------------------------------------------------------------------------------------------
@@ -84,21 +92,44 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) moveDir = -1;
         if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) moveDir = 1;
 
-        //Space input
-        if ((Input.GetKeyDown(KeyCode.Space) && currentState == MovementState.Grounded && isGrounded))
+        if (Input.GetKey(KeyCode.L))
         {
-            velocity.y = jumpStrength;
-            EnterAirborne(); // force airborne
+            isCrouching = true;
+            isRunning = false;
+        }
+
+        else
+        {
+            isCrouching = false;
+            isRunning = true;
+        }
+
+        //Space input
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (currentState == MovementState.Grounded && isGrounded)
+            {
+                velocity.y = jumpStrength;
+                EnterAirborne();
+                //usedSecondJump = false;   // fresh airtime
+                canSecondJump = false;   // will be re-enabled by trigger
+            }
+            else if (currentState == MovementState.Airborne /*&& !usedSecondJump*/ && canSecondJump)
+            {
+                velocity.y = jumpStrength;
+                //usedSecondJump = true;    // consume the extra jump
+                canSecondJump = false;   // must re-enter a head trigger to get another
+            }
         }
 
         //Enable pivot attach if airborne
-        if (pivotManager.currentPivot != null && (Input.GetKeyDown(KeyCode.Space)))
+        if (pivotManager.currentPivot != null && (Input.GetKeyDown(KeyCode.J)))
         {
             AttachToPivot(pivotManager.currentPivot);
         }
 
         // Pivot release
-        if (currentState == MovementState.Pivot && (Input.GetKeyUp(KeyCode.Space)))
+        if (currentState == MovementState.Pivot && (Input.GetKeyUp(KeyCode.J)))
         {
             //Debug.Log("unpressed J");
             DetachFromPivot();
@@ -181,6 +212,9 @@ public class PlayerController : MonoBehaviour
                 ref angularVelocity,
                 pivotPosition,
                 ropeLength,
+                isRunning,
+                isCrouching,
+                crouchSpeed,
                 Time.deltaTime);
             transform.position = newPos; // your Pivot path returns absolute position 
         }
@@ -202,6 +236,9 @@ public class PlayerController : MonoBehaviour
             ref angularVelocity,
             pivotPosition,
             ropeLength,
+            isRunning,
+            isCrouching,
+            crouchSpeed,
             Time.deltaTime);
     }
 
@@ -320,14 +357,16 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void UpdateAnimator()
+    void UpdateAnimatorAndSound()
     {
-        bool running = isGrounded && moveDir != 0f;
-        bool idle = isGrounded && !running;
+        bool crouching = isGrounded && moveDir != 0f && isCrouching;
+        bool running = isGrounded && moveDir != 0f && isRunning;
+        bool idle = isGrounded && !running && !crouching;
         bool swing = currentState == MovementState.Pivot;
         bool jump = !isGrounded && velocity.y > 0f && !swing;
         bool fall = !isGrounded && velocity.y <= 0f && !swing;
 
+        anim.SetBool(CrouchHash, crouching);
         anim.SetBool(RunHash, running);
         anim.SetBool(IdleHash, idle);
         anim.SetBool(JumpHash, jump);

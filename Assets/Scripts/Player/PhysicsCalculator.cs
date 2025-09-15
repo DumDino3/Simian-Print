@@ -15,6 +15,9 @@ public class PhysicsCalculator
         ref float angularVelocity,
         Vector3 pivotPosition,
         float ropeLength,
+        bool isRunning,
+        bool isCrouching,
+        float crouchSpeed,
         float deltaTime
     )
     {
@@ -22,9 +25,18 @@ public class PhysicsCalculator
         {
             //------------------------------------------------------------------------------------- GROUNDED ----------------------------------------------------------------------------------------------
             case MovementState.Grounded:
-                currentVelocity.x = moveDir * moveSpeed;
-                currentVelocity.y = 0f;
-                return currentVelocity;
+                if (isRunning && !isCrouching)
+                {
+                    currentVelocity.x = moveDir * moveSpeed;
+                    currentVelocity.y = 0f;
+                }
+
+                else if (isCrouching && !isRunning)
+                {
+                    currentVelocity.x = moveDir * crouchSpeed;
+                    currentVelocity.y = 0f;
+                }
+                    return currentVelocity;
 
             //------------------------------------------------------------------------------------- AIRBORNE ----------------------------------------------------------------------------------------------
             case MovementState.Airborne:
