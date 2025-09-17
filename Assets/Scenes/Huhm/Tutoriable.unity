@@ -3015,6 +3015,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad3b1c8805a76a94ea4e4501c973c66f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  followPlayer: 0
   player: {fileID: 5157190712212854839}
 --- !u!114 &963194230
 MonoBehaviour:
@@ -6545,10 +6546,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 17950075688978325, guid: 4fb2c1b636c5e874e9cf89c9f87c20ac, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 1521354933275010435, guid: 4fb2c1b636c5e874e9cf89c9f87c20ac, type: 3}
       propertyPath: player
       value: 
@@ -6569,10 +6566,6 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 1103987070}
-    - target: {fileID: 4965668545488184874, guid: 4fb2c1b636c5e874e9cf89c9f87c20ac, type: 3}
-      propertyPath: m_Convex
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 5509013233503307716, guid: 4fb2c1b636c5e874e9cf89c9f87c20ac, type: 3}
       propertyPath: m_Mesh
       value: 
@@ -6583,7 +6576,7 @@ PrefabInstance:
       objectReference: {fileID: 1103987070}
     - target: {fileID: 5643588678524897951, guid: 4fb2c1b636c5e874e9cf89c9f87c20ac, type: 3}
       propertyPath: m_VersionIndex
-      value: 10371
+      value: 10377
       objectReference: {fileID: 0}
     - target: {fileID: 5756117716606929577, guid: 4fb2c1b636c5e874e9cf89c9f87c20ac, type: 3}
       propertyPath: m_LocalPosition.x
