@@ -36,6 +36,13 @@ public class PhysicsCalculator
                     currentVelocity.x = moveDir * crouchSpeed;
                     currentVelocity.y = 0f;
                 }
+
+                else
+                {
+                    currentVelocity.x = 0f;
+                    currentVelocity.y = 0f;
+                }
+
                     return currentVelocity;
 
             //------------------------------------------------------------------------------------- AIRBORNE ----------------------------------------------------------------------------------------------

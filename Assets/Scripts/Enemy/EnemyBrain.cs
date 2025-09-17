@@ -24,6 +24,21 @@ public class EnemyBrain : MonoBehaviour
     [Header("Aggro/Signals")]
     public UnityEvent OnAlerted; // used later; Alerted state not implemented in this step
 
+    [Header("Scan (Simple)")]
+    [SerializeField] private Transform headToRotate;
+    [SerializeField] private GameObject visionConeObject;
+    [SerializeField, Range(0.5f, 6f)] private float scanDuration = 2.0f;
+    [SerializeField, Range(0.5f, 20f)] private float scanAimLerp = 8f;
+
+    // Your head mesh faces -Z by default; rotate 180° yaw so -Z aims at target.
+    [SerializeField] private Vector3 headForwardOffsetEuler = new Vector3(0f, 180f, 0f);
+
+    // Timer that resets on new noise during Scan
+    private float _scanTimeRemaining;
+
+    // Track if we’ve received a noise snapshot (so Huh can prefer it)
+    private bool _hasNoiseSnapshot;
+
     // runtime
     public State Current { get; private set; } = State.Idle;
     private bool isPlayerInside;
@@ -46,17 +61,7 @@ public class EnemyBrain : MonoBehaviour
     }
 
     // ---------- Basic update to kick us from Idle Huh using either trigger or distance/noise ----------
-    void Update()
-    {
-        if (Current == State.Idle)
-        {
-            // Choose either trigger-based or distance-based here:
-            if (isPlayerInside && PlayerMadeNoise())
-            {
-                SwitchTo(State.Huh);
-            }
-        }
-    }
+
 
     // ---------- Proximity via trigger ----------
     void OnTriggerEnter(Collider collision)
@@ -76,18 +81,29 @@ public class EnemyBrain : MonoBehaviour
     }
 
     // ---------- Simple “noise spike” detector (we’ll refine later) ----------
-    bool PlayerMadeNoise()
+    // Called by the player when a noisy action occurs.
+    public void HearNoise(Vector3 noisePos)
     {
-   // Very simple rule for now:
-        // 1) Running fast OR 2) Recent heavy landing (airborne->grounded with high |vy|).
-        // You already expose velocity and grounded state. (We’ll replace with a nicer gate later.)
-        if (playerCtrl.velocity.magnitude > playerCtrl.moveSpeed * 0.9f)
+        // Only react if the player is inside our proximity trigger
+        if (!isPlayerInside) return;
+
+        _snapshotPoint = noisePos;
+        _hasNoiseSnapshot = true;
+
+        if (Current == State.Idle)
         {
-            return true;
+            // Kick off the startle flow
+            SwitchTo(State.Huh);
         }
 
-        return false;
+        else if (Current == State.Scan)
+        {
+            // NEW: while scanning, keep aiming at the new source and extend the window
+            _scanTimeRemaining = scanDuration;
+            // (Head will lerp toward _snapshotPoint in CoScanSimple)
+        }
     }
+
 
     // ---------- State machine ----------
     void SwitchTo(State next)
@@ -114,6 +130,12 @@ public class EnemyBrain : MonoBehaviour
                     _currentCoroutine = StartCoroutine(CoHuh());
                     break;
                 }
+            case State.Scan:   // NEW
+                {
+                    _scanTimeRemaining = scanDuration;              // NEW: start/refresh timer on entry
+                    _currentCoroutine = StartCoroutine(CoScanSimple());
+                    break;
+                }
             default:
                 {
                     EnterIdle(); // only implementing Idle+Huh this pass
@@ -128,6 +150,8 @@ public class EnemyBrain : MonoBehaviour
 
         // UI: hide all indicators in Idle
         indicators.HideAll();
+        if (visionConeObject) visionConeObject.SetActive(false);
+        _hasNoiseSnapshot = false;
     }
 
     IEnumerator CoHuh()
@@ -147,9 +171,7 @@ public class EnemyBrain : MonoBehaviour
             {
                 playerLocationSnap = true;
 
-                // snapshot player (or last-known/noise) position
-
-                _snapshotPoint = player.position;
+                if (!_hasNoiseSnapshot) _snapshotPoint = player.position; // prefer noise if we have one
             }
 
             // If stomp/other interrupts arrive later, they’d switch state here.
@@ -158,8 +180,44 @@ public class EnemyBrain : MonoBehaviour
         }
 
         // Huh ends → (later will go to Scan; for now return to Idle)
+        SwitchTo(State.Scan);
+    }
+
+    IEnumerator CoScanSimple()
+    {
+        // UI: keep "?" on during Scan
+        indicators.ShowQuestion(true);
+
+        // Turn on the cone object
+        if (visionConeObject) visionConeObject.SetActive(true);
+
+        while (_scanTimeRemaining > 0f)
+        {
+            _scanTimeRemaining -= Time.deltaTime;  // FIX: count down
+            LerpHeadTowards(_snapshotPoint, Time.deltaTime);
+            yield return null;
+        }
+
+        // Turn cone off and clear UI
+        if (visionConeObject) visionConeObject.SetActive(false);
         indicators.ShowQuestion(false);
 
+        // Back to Idle (Alert transition will come later)
         SwitchTo(State.Idle);
+    }
+
+    void LerpHeadTowards(Vector3 worldTarget, float dt)
+    {
+        Transform swivel = headToRotate ? headToRotate : transform;
+
+        Vector3 from = swivel.position;
+        Vector3 dir = worldTarget - from;
+        if (dir.sqrMagnitude < 0.0001f) return;
+
+        // LookRotation assumes +Z is forward; your head model faces -Z.
+        Quaternion look = Quaternion.LookRotation(dir.normalized, Vector3.up);
+        Quaternion targetRot = look * Quaternion.Euler(headForwardOffsetEuler);
+
+        swivel.rotation = Quaternion.Slerp(swivel.rotation, targetRot, dt * scanAimLerp);
     }
 }

@@ -9,6 +9,7 @@ public class RaycastDetector : MonoBehaviour
     [Header("Detection Settings")]
     public LayerMask groundLayer;
     public float checkDistance = 0.1f;
+    public bool landedThisFrame;
 
     [Header("Ray Origins")]
     public Transform[] groundCasts;
@@ -18,10 +19,23 @@ public class RaycastDetector : MonoBehaviour
 
     public void CheckEnvironment()
     {
+        // reset per-frame
+        landedThisFrame = false;
+
+        // cache previous grounded before we overwrite it
+        bool prevGrounded = playerController.isGrounded;
+
         playerController.isGrounded = CheckMultiple(groundCasts, Vector3.down);
         playerController.ceilingHit = CheckMultiple(ceilingCasts, Vector3.up);
         playerController.wallLeftHit = CheckMultiple(leftWallCasts, Vector3.left);
         playerController.wallRightHit = CheckMultiple(rightWallCasts, Vector3.right);
+
+        // Detect "landing" edge: airborne -> grounded with non-positive vertical velocity.
+        // (Avoid firing when snapping up from below, and ignore if we were already grounded.)
+        if (!prevGrounded && playerController.isGrounded && playerController.currentState == MovementState.Airborne && playerController.velocity.y <= 0f)
+        {
+            landedThisFrame = true;
+        }
     }
 
     bool CheckMultiple(Transform[] origins, Vector3 dir)

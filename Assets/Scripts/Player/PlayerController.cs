@@ -44,6 +44,9 @@ public class PlayerController : MonoBehaviour
     [Header("PROCEDURAL VARIABLES")]
     public bool isRight = true;
 
+    // NEW: cache enemies once and broadcast noise to all
+    private EnemyBrain[] enemies;
+
     //Anim para hash
     static readonly int RunHash = Animator.StringToHash("Run");
     static readonly int IdleHash = Animator.StringToHash("Idle");
@@ -52,6 +55,11 @@ public class PlayerController : MonoBehaviour
     static readonly int SwingHash = Animator.StringToHash("Swing");
     static readonly int CrouchHash = Animator.StringToHash("Crouch");
 
+    void Start()
+    {
+        // Cache all EnemyBrain instances in the scene once.
+        enemies = FindObjectsOfType<EnemyBrain>();
+    }
 
     //------------------------------------------------------------------------------------------------- ON UPDATE -------------------------------------------------------------------------------------------------
 
@@ -81,7 +89,10 @@ public class PlayerController : MonoBehaviour
 
         UpdateAnimatorAndSound();
 
-
+        if (isRunning)
+        {
+            PingNoise(transform.position);
+        }
     }
 
     //------------------------------------------------------------------------------------------------- INPUT -------------------------------------------------------------------------------------------------
@@ -92,16 +103,22 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) moveDir = -1;
         if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) moveDir = 1;
 
-        if (Input.GetKey(KeyCode.L))
+        if (Input.GetKey(KeyCode.L) && moveDir != 0 && isGrounded)
         {
             isCrouching = true;
             isRunning = false;
         }
 
+        else if (moveDir != 0 && isGrounded)
+        {
+            isRunning = true;
+            isCrouching = false;
+        }
+
         else
         {
             isCrouching = false;
-            isRunning = true;
+            isRunning = false;
         }
 
         //Space input
@@ -113,12 +130,14 @@ public class PlayerController : MonoBehaviour
                 EnterAirborne();
                 //usedSecondJump = false;   // fresh airtime
                 canSecondJump = false;   // will be re-enabled by trigger
+                PingNoise(transform.position);
             }
             else if (currentState == MovementState.Airborne /*&& !usedSecondJump*/ && canSecondJump)
             {
                 velocity.y = jumpStrength;
                 //usedSecondJump = true;    // consume the extra jump
                 canSecondJump = false;   // must re-enter a head trigger to get another
+                PingNoise(transform.position);
             }
         }
 
@@ -196,6 +215,8 @@ public class PlayerController : MonoBehaviour
             Vector3 newPos = pivotPosition + offset;
             newPos.z = this.transform.position.z;
             transform.position = newPos;
+
+            PingNoise(transform.position);
         }
         else
         {
@@ -278,6 +299,11 @@ public class PlayerController : MonoBehaviour
         {
             velocity.x = 0;
         }
+
+        if (raycastDetector.landedThisFrame)
+        {
+            PingNoise(transform.position);   // NEW
+        }
     }
 
     //------------------------------------------------------------------------------------------------- STATE LOGIC -------------------------------------------------------------------------------------------------
@@ -323,6 +349,8 @@ public class PlayerController : MonoBehaviour
 
         currentState = MovementState.Pivot;
 
+        PingNoise(transform.position);
+
         //Debug.Log($"AttachToPivot: {pivot.name}, ropeLength={ropeLength}, swingAngle={swingAngle}, angularVel={angularVelocity}");
     }
 
@@ -333,6 +361,8 @@ public class PlayerController : MonoBehaviour
         velocity = tangentDir * (angularVelocity * ropeLength);
 
         currentState = MovementState.Airborne;
+
+        PingNoise(transform.position);
     }
 
     //------------------------------------------------------------------------------------------------- VISUAL LOGIC -------------------------------------------------------------------------------------------------
@@ -409,6 +439,18 @@ public class PlayerController : MonoBehaviour
         }
 
         currentState = MovementState.Airborne;
+    }
+
+    //------------------------------------------------------------------------------------------------- NOISE BROADCAST -------------------------------------------------------------------------------------------------
+
+    void PingNoise(Vector3 pos)
+    {
+        if (enemies == null || enemies.Length == 0) return;
+        for (int i = 0; i < enemies.Length; i++)
+        {
+            var e = enemies[i];
+            if (e != null) e.HearNoise(pos);
+        }
     }
 
 }

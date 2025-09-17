@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 
 public class Script : MonoBehaviour
 {
+    public bool followPlayer;
     public Transform player;
     // Start is called before the first frame update
     void Start()
@@ -19,6 +20,9 @@ public class Script : MonoBehaviour
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
-        this.transform.position = new Vector3(player.position.x, player.position.y, this.transform.position.z);
+        if (followPlayer)
+        {
+            this.transform.position = new Vector3(player.position.x, player.position.y, this.transform.position.z);
+        }
     }
 }
